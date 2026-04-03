@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clinical Matrix — ASD Database</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- UPLOAD SCREEN -->
+  <div id="upload-screen">
+    <div class="up-bg-grid"></div>
+    <div class="up-content">
+      <header class="up-header">
+        <div class="up-eyebrow">RDB PedoPsychiatry</div>
+        <h1 class="up-title">Data Matrix</h1>
+        <p class="up-desc">Load your <code>clinical_data.json</code> to explore instrument coverage across subjects and databases.</p>
+      </header>
+      <div id="drop-zone" role="button" tabindex="0">
+        <div class="dz-icon">⬡</div>
+        <div class="dz-main">Drop <strong>clinical_data.json</strong> here</div>
+        <div class="dz-sub">or click to browse</div>
+        <input id="file-input" type="file" accept=".json">
+      </div>
+      <div id="load-error" role="alert"></div>
+      <div class="export-block">
+        <div class="export-label">NOTEBOOK EXPORT</div>
+        <pre>cols = ['SUBJECT_ID','UNIT_DB','SEXE','AGE_YEARS',
+          'DSM5_MET','DIAG_CONSENSUS','ADOS_DIAG',
+          'ADOS_Total','ADOS_AS','ADOS_CRR','ADOS_Mod',
+          'ADI_A','ADI_BV','ADI_BNV','ADI_C',
+          'VABS_CA_NC','VABS_Com_NS','VABS_Soc_NS','VABS_VQ_NS',
+          'SRS_Total','ADHD_Inatt','ADHD_Sub','ADHD_Total',
+          'POIDS','TAILLE']
+          present = [c for c in cols if c in df_unique.columns]
+          df_unique[present].to_json('clinical_data.json', orient='records')</pre>
+        <div class="export-warn">Use <strong>df_unique</strong> — not df_all — for one row per subject</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MATRIX SCREEN -->
+  <div id="matrix-screen" hidden>
+    <header id="app-header">
+      <div class="hdr-left">
+        <div class="hdr-eyebrow">RDB PedoPsychiatry</div>
+        <div class="hdr-title">Subject × Clinical Data</div>
+      </div>
+      <div id="source-badges"></div>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input id="search-input" type="text" placeholder="Search ID…" autocomplete="off" spellcheck="false">
+        <button id="search-clear">✕</button>
+      </div>
+      <nav class="hdr-controls">
+        <div class="ctrl-group" id="sort-group">
+          <span class="ctrl-label">SORT</span>
+          <button class="ctrl-btn active" data-sort="SOURCE">Source</button>
+          <button class="ctrl-btn" data-sort="AGE">Age</button>
+          <button class="ctrl-btn" data-sort="DSM5">DSM5</button>
+          <button class="ctrl-btn" data-sort="ADOS">ADOS</button>
+        </div>
+        <div class="ctrl-group" id="db-filter-group">
+          <span class="ctrl-label">DB</span>
+        </div>
+        <div class="ctrl-group" id="sex-group">
+          <span class="ctrl-label">SEX</span>
+          <button class="ctrl-btn sex-active" data-sex="ALL">All</button>
+          <button class="ctrl-btn" data-sex="M">M</button>
+          <button class="ctrl-btn" data-sex="F">F</button>
+        </div>
+        <div class="ctrl-group" id="age-band-group">
+          <span class="ctrl-label">AGE</span>
+          <button class="ctrl-btn age-active" data-age="ALL">All</button>
+          <button class="ctrl-btn" data-age="0-3">&lt;3yr</button>
+          <button class="ctrl-btn" data-age="3-6">3–6</button>
+          <button class="ctrl-btn" data-age="6-12">6–12</button>
+          <button class="ctrl-btn" data-age="12-18">12–18</button>
+          <button class="ctrl-btn" data-age="18+">18+</button>
+        </div>
+        <div class="ctrl-group" id="diag-filter-group">
+          <span class="ctrl-label">DIAG</span>
+          <button class="ctrl-btn diag-active" data-diag="ALL">All</button>
+          <button class="ctrl-btn" data-diag="DSM5">DSM5+</button>
+          <button class="ctrl-btn" data-diag="ADOS">ADOS+</button>
+          <button class="ctrl-btn" data-diag="NONE">Undiag.</button>
+        </div>
+        <div class="ctrl-group" id="zoom-group">
+          <span class="ctrl-label">ZOOM</span>
+          <button class="ctrl-btn" data-zoom="14">XS</button>
+          <button class="ctrl-btn active" data-zoom="20">S</button>
+          <button class="ctrl-btn" data-zoom="26">M</button>
+          <button class="ctrl-btn" data-zoom="32">L</button>
+        </div>
+        <div class="ctrl-group">
+          <button class="ctrl-btn" id="toggle-cutoffs-btn">Cutoffs OFF</button>
+          <button class="ctrl-btn icon-btn" id="toggle-legend-btn">⊞ Legend</button>
+        </div>
+        <div class="ctrl-group">
+          <button class="ctrl-btn eda-btn" id="open-eda-btn">📊 EDA</button>
+          <button class="ctrl-btn export-btn" id="export-csv-btn">⬇ CSV</button>
+          <button class="ctrl-btn icon-btn danger" id="reload-btn">↩</button>
+        </div>
+      </nav>
+      <div id="file-info"></div>
+    </header>
+
+    <div id="legend-bar">
+      <span class="legend-label">LEGEND</span>
+      <div class="legend-item"><span class="swatch" style="background:#0f172a;border:1px solid #334155"></span>No data</div>
+      <div class="legend-item"><span class="swatch" style="background:#1e293b"></span>Age N/A</div>
+      <div class="legend-item" id="cutoff-legend-item" hidden>
+        <span class="swatch" style="background:transparent;border:2px solid #fbbf24"></span>Above cutoff
+      </div>
+      <div id="legend-panels"></div>
+      <div id="legend-sources"></div>
+    </div>
+
+    <div id="table-scroll">
+      <table id="matrix-table" role="grid"></table>
+    </div>
+
+    <footer id="completeness-footer">
+      <span class="footer-label">COMPLETENESS</span>
+      <div id="completeness-items"></div>
+      <div id="active-filter-pills"></div>
+    </footer>
+  </div>
+
+  <!-- SUBJECT REPORT OVERLAY -->
+  <div id="subject-overlay" hidden role="dialog" aria-modal="true">
+    <div id="subject-panel">
+      <button id="close-report">✕</button>
+      <div id="report-content"></div>
+    </div>
+  </div>
+
+  <!-- EDA OVERLAY -->
+  <div id="eda-overlay" hidden role="dialog" aria-modal="true">
+    <div id="eda-panel">
+      <div id="eda-header">
+        <div>
+          <div class="hdr-eyebrow">Exploratory Data Analysis</div>
+          <div class="hdr-title">Cohort Overview</div>
+        </div>
+        <div id="eda-tabs">
+          <button class="eda-tab active" data-tab="demographics">Demographics</button>
+          <button class="eda-tab" data-tab="scores">Score Distributions</button>
+          <button class="eda-tab" data-tab="anthropo">Weight & Height</button>
+          <button class="eda-tab" data-tab="missingness">Completeness</button>
+        </div>
+        <button id="close-eda">✕</button>
+      </div>
+      <div id="eda-body"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script src="eda.js"></script>
+</body>
+</html>
